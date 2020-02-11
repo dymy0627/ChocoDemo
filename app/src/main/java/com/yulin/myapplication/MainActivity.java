@@ -2,7 +2,12 @@ package com.yulin.myapplication;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
+import android.view.inputmethod.EditorInfo;
+import android.widget.EditText;
 
 import com.yulin.myapplication.database.ChocoDatabase;
 import com.yulin.myapplication.web.ChocoService;
@@ -37,20 +42,41 @@ public class MainActivity extends AppCompatActivity {
 
         RecyclerView recyclerView = findViewById(R.id.drama_listView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerView.requestFocus();
 
         mViewAdapter = new RecyclerViewAdapter(this, mDramaBeanList);
         mViewAdapter.setHasStableIds(true);
         mViewAdapter.setItemClickListener(view -> {
             RecyclerView.ViewHolder viewHolder = (RecyclerView.ViewHolder) view.getTag();
             Intent intent = new Intent(this, InfoActivity.class);
-            intent.putExtra("Drama", mDramaBeanList.get(viewHolder.getAdapterPosition()));
+            intent.putExtra("Drama", mViewAdapter.getItem(viewHolder.getAdapterPosition()));
             startActivity(intent);
         });
         recyclerView.setAdapter(mViewAdapter);
 
-//        Completable.fromAction(() -> ChocoDatabase.getInstance(this).getDramaDao().deleteAllDrama())
-//                .subscribeOn(Schedulers.io())
-//                .andThen(getDramaList());
+        EditText searchEditText = findViewById(R.id.search_editText);
+        searchEditText.addTextChangedListener(new TextWatcher() {
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                Log.d(TAG, "onTextChanged:" + s);
+                mViewAdapter.getFilter().filter(s.toString());
+            }
+
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+            }
+        });
+        searchEditText.setOnEditorActionListener((textView, actionId, keyEvent) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                new Handler(getMainLooper()).postDelayed(recyclerView::requestFocus, 100);
+            }
+            return false;
+        });
 
         getDramaList().subscribe(new SingleObserver<List<DramaBean>>() {
 
