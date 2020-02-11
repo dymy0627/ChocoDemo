@@ -1,6 +1,7 @@
 package com.yulin.myapplication;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.text.Editable;
@@ -34,6 +35,8 @@ public class MainActivity extends AppCompatActivity {
     private RecyclerViewAdapter mViewAdapter;
     private List<DramaBean> mDramaBeanList = new ArrayList<>();
 
+    private EditText mSearchEditText;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -54,8 +57,8 @@ public class MainActivity extends AppCompatActivity {
         });
         recyclerView.setAdapter(mViewAdapter);
 
-        EditText searchEditText = findViewById(R.id.search_editText);
-        searchEditText.addTextChangedListener(new TextWatcher() {
+        mSearchEditText = findViewById(R.id.search_editText);
+        mSearchEditText.addTextChangedListener(new TextWatcher() {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
@@ -71,13 +74,21 @@ public class MainActivity extends AppCompatActivity {
             public void afterTextChanged(Editable s) {
             }
         });
-        searchEditText.setOnEditorActionListener((textView, actionId, keyEvent) -> {
+        mSearchEditText.setOnEditorActionListener((textView, actionId, keyEvent) -> {
             if (actionId == EditorInfo.IME_ACTION_DONE) {
                 new Handler(getMainLooper()).postDelayed(recyclerView::requestFocus, 100);
             }
             return false;
         });
+    }
 
+    private SharedPreferences mSharedPreferences;
+    private static final String LAST_SEARCH = "last_search";
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        Log.d(TAG, "onStart");
         getDramaList().subscribe(new SingleObserver<List<DramaBean>>() {
 
             @Override
@@ -88,13 +99,15 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onSuccess(List<DramaBean> dramaBeans) {
                 if (!dramaBeans.isEmpty()) {
-                    for (DramaBean dramaBean : dramaBeans) {
-                        Log.d(TAG, "onSuccess: getDrama_id=" + dramaBean.getDrama_id());
-                        Log.d(TAG, "onSuccess: getName=" + dramaBean.getName());
-                    }
                     mDramaBeanList.clear();
                     mDramaBeanList.addAll(dramaBeans);
                     mViewAdapter.notifyDataSetChanged();
+
+                    mSharedPreferences = getSharedPreferences("Choco", MODE_PRIVATE);
+                    String lastSearchText = mSharedPreferences.getString(LAST_SEARCH, null);
+                    if (lastSearchText != null && !lastSearchText.isEmpty()) {
+                        mSearchEditText.setText(lastSearchText);
+                    }
                 }
             }
 
@@ -104,6 +117,13 @@ public class MainActivity extends AppCompatActivity {
                 t.printStackTrace();
             }
         });
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        Log.d(TAG, "onStop");
+        mSharedPreferences.edit().putString(LAST_SEARCH, mSearchEditText.getText().toString()).apply();
     }
 
     public Single<List<DramaBean>> getDramaList() {
