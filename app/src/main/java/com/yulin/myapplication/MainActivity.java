@@ -8,7 +8,8 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.inputmethod.EditorInfo;
-import android.widget.EditText;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 
 import com.yulin.myapplication.database.ChocoDatabase;
 import com.yulin.myapplication.web.ChocoService;
@@ -34,8 +35,9 @@ public class MainActivity extends AppCompatActivity {
 
     private RecyclerViewAdapter mViewAdapter;
     private List<DramaBean> mDramaBeanList = new ArrayList<>();
+    private List<String> mDramaNameList = new ArrayList<>();
 
-    private EditText mSearchEditText;
+    private AutoCompleteTextView mSearchEditText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,6 +82,9 @@ public class MainActivity extends AppCompatActivity {
             }
             return false;
         });
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, mDramaNameList);
+        mSearchEditText.setAdapter(adapter);
+        mSearchEditText.setThreshold(1);
     }
 
     private SharedPreferences mSharedPreferences;
@@ -102,6 +107,10 @@ public class MainActivity extends AppCompatActivity {
                     mDramaBeanList.clear();
                     mDramaBeanList.addAll(dramaBeans);
                     mViewAdapter.notifyDataSetChanged();
+
+                    for (DramaBean dramaBean : dramaBeans) {
+                        mDramaNameList.add(dramaBean.getName());
+                    }
 
                     mSharedPreferences = getSharedPreferences("Choco", MODE_PRIVATE);
                     String lastSearchText = mSharedPreferences.getString(LAST_SEARCH, null);
