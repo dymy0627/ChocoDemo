@@ -1,5 +1,6 @@
 package com.yulin.myapplication;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -8,10 +9,12 @@ import com.yulin.myapplication.web.ChocoService;
 import com.yulin.myapplication.web.DramaResponse;
 import com.yulin.myapplication.web.RetrofitServiceManager;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import androidx.appcompat.app.AppCompatActivity;
-import io.reactivex.Completable;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import io.reactivex.Single;
 import io.reactivex.SingleObserver;
 import io.reactivex.android.schedulers.AndroidSchedulers;
@@ -23,10 +26,27 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
     private static final String JSON_URL = "https://static.linetv.tw/interview/dramas-sample.json";
 
+    private RecyclerViewAdapter mViewAdapter;
+    private List<DramaBean> mDramaBeanList = new ArrayList<>();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_main);
+
+        RecyclerView recyclerView = findViewById(R.id.drama_listView);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+        mViewAdapter = new RecyclerViewAdapter(this, mDramaBeanList);
+        mViewAdapter.setHasStableIds(true);
+        mViewAdapter.setItemClickListener(view -> {
+            RecyclerView.ViewHolder viewHolder = (RecyclerView.ViewHolder) view.getTag();
+            Intent intent = new Intent(this, InfoActivity.class);
+            intent.putExtra("Drama", mDramaBeanList.get(viewHolder.getAdapterPosition()));
+            startActivity(intent);
+        });
+        recyclerView.setAdapter(mViewAdapter);
 
 //        Completable.fromAction(() -> ChocoDatabase.getInstance(this).getDramaDao().deleteAllDrama())
 //                .subscribeOn(Schedulers.io())
@@ -46,6 +66,9 @@ public class MainActivity extends AppCompatActivity {
                         Log.d(TAG, "onSuccess: getDrama_id=" + dramaBean.getDrama_id());
                         Log.d(TAG, "onSuccess: getName=" + dramaBean.getName());
                     }
+                    mDramaBeanList.clear();
+                    mDramaBeanList.addAll(dramaBeans);
+                    mViewAdapter.notifyDataSetChanged();
                 }
             }
 

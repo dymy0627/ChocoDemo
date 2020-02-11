@@ -1,11 +1,21 @@
 package com.yulin.myapplication;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
 @Entity(tableName = "drama")
-public class DramaBean {
+public class DramaBean implements Parcelable {
+
+    public DramaBean(String name, String created_at, String thumb, float rating) {
+        this.name = name;
+        this.created_at = created_at;
+        this.thumb = thumb;
+        this.rating = rating;
+    }
 
     @PrimaryKey(autoGenerate = true)
     @ColumnInfo(name = "id")
@@ -84,4 +94,36 @@ public class DramaBean {
     public void setRating(float rating) {
         this.rating = rating;
     }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeString(this.name);
+        dest.writeInt(this.total_views);
+        dest.writeString(this.created_at);
+        dest.writeString(this.thumb);
+        dest.writeFloat(this.rating);
+    }
+
+    private DramaBean(Parcel in) {
+        this.name = in.readString();
+        this.total_views = in.readInt();
+        this.created_at = in.readString();
+        this.thumb = in.readString();
+        this.rating = in.readFloat();
+    }
+
+    public static final Parcelable.Creator<DramaBean> CREATOR = new Parcelable.Creator<DramaBean>() {
+        public DramaBean createFromParcel(Parcel source) {
+            return new DramaBean(source);
+        }
+
+        public DramaBean[] newArray(int size) {
+            return new DramaBean[size];
+        }
+    };
 }
