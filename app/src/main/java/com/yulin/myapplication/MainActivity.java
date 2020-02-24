@@ -34,7 +34,6 @@ import io.reactivex.schedulers.Schedulers;
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
-    private static final String JSON_URL = "https://static.linetv.tw/interview/dramas-sample.json";
 
     private RecyclerViewAdapter mViewAdapter;
     private List<DramaBean> mDramaBeanList = new ArrayList<>();
@@ -206,7 +205,7 @@ public class MainActivity extends AppCompatActivity {
     public Single<List<DramaBean>> getDramaListFromWeb() {
         Log.d(TAG, "getDramaListFromWeb");
         return RetrofitServiceManager.getInstance().create(ChocoService.class)
-                .getDramas(JSON_URL)
+                .getDramas()
                 .map(DramaResponse::getData)
                 .flatMap(this::saveDramaList);
     }
