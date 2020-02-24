@@ -25,6 +25,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+import io.reactivex.Completable;
+import io.reactivex.CompletableObserver;
 import io.reactivex.Single;
 import io.reactivex.SingleObserver;
 import io.reactivex.android.schedulers.AndroidSchedulers;
@@ -99,11 +101,12 @@ public class MainActivity extends AppCompatActivity {
                     .subscribe(new SingleObserver<List<DramaBean>>() {
                         @Override
                         public void onSubscribe(Disposable d) {
-
+                            Log.d(TAG, "onRefresh: onSubscribe:");
                         }
 
                         @Override
                         public void onSuccess(List<DramaBean> dramaBeans) {
+                            Log.d(TAG, "onRefresh: onSuccess:");
                             updateDramaList(dramaBeans);
                             updateAutoCompleteData(dramaBeans);
                             Toast.makeText(MainActivity.this, "列表更新完成", Toast.LENGTH_SHORT).show();
@@ -112,7 +115,7 @@ public class MainActivity extends AppCompatActivity {
 
                         @Override
                         public void onError(Throwable e) {
-                            Log.d(TAG, "onError:");
+                            Log.d(TAG, "onRefresh: onError:");
                             e.printStackTrace();
                             if (e instanceof UnknownHostException) {
                                 Toast.makeText(MainActivity.this, "請確認網路連線", Toast.LENGTH_SHORT).show();
@@ -140,11 +143,12 @@ public class MainActivity extends AppCompatActivity {
 
                     @Override
                     public void onSubscribe(Disposable d) {
-                        Log.d(TAG, "onSubscribe:");
+                        Log.d(TAG, "getDramaList: onSubscribe:");
                     }
 
                     @Override
                     public void onSuccess(List<DramaBean> dramaBeans) {
+                        Log.d(TAG, "getDramaList: onSuccess:");
                         if (!dramaBeans.isEmpty()) {
                             updateDramaList(dramaBeans);
                             updateAutoCompleteData(dramaBeans);
@@ -159,7 +163,7 @@ public class MainActivity extends AppCompatActivity {
 
                     @Override
                     public void onError(Throwable t) {
-                        Log.d(TAG, "onError:");
+                        Log.d(TAG, "getDramaList: onError:");
                         if (t instanceof UnknownHostException) {
                             Toast.makeText(MainActivity.this, "請確認網路連線", Toast.LENGTH_SHORT).show();
                         } else {
@@ -207,7 +211,7 @@ public class MainActivity extends AppCompatActivity {
         return RetrofitServiceManager.getInstance().create(ChocoService.class)
                 .getDramas()
                 .map(DramaResponse::getData)
-                .flatMap(this::saveDramaList);
+                .doOnSuccess(this::saveDramaList);
     }
 
     public Single<List<DramaBean>> getDramaListFromDb() {
@@ -215,13 +219,31 @@ public class MainActivity extends AppCompatActivity {
         return ChocoDatabase.getInstance(this).getDramaDao().getDramaList();
     }
 
-    public Single<List<DramaBean>> saveDramaList(List<DramaBean> dramaBeans) {
-        return Single.fromCallable(() -> {
+    public void saveDramaList(List<DramaBean> dramaBeans) {
+        Completable.fromAction(() -> {
             Log.d(TAG, "saveDramaList");
-            ChocoDatabase.getInstance(this).getDramaDao().deleteAllDrama();
-            ChocoDatabase.getInstance(this).getDramaDao().insertDramaList(dramaBeans);
-            return dramaBeans;
-        });
+            ChocoDatabase.getInstance(getApplicationContext()).getDramaDao().deleteAllDrama();
+            ChocoDatabase.getInstance(getApplicationContext()).getDramaDao().insertDramaList(dramaBeans);
+            Thread.sleep(5000); // simulate long save.
+        })
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new CompletableObserver() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+                        Log.d(TAG, "saveDramaList: onSubscribe");
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        Log.d(TAG, "saveDramaList: onComplete");
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        Log.d(TAG, "saveDramaList: onError");
+                    }
+                });
     }
 
 }
